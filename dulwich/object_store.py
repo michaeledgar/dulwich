@@ -22,6 +22,7 @@
 
 
 from io import BytesIO
+import collections
 import errno
 from itertools import chain
 import os
@@ -1048,7 +1049,7 @@ class ObjectStoreGraphWalker(object):
         :param local_heads: Heads to start search with
         :param get_parents: Function for finding the parents of a SHA1.
         """
-        self.heads = set(local_heads)
+        self.heads = collections.OrderedDict(((sha, 1) for sha in local_heads))
         self.get_parents = get_parents
         self.parents = {}
 
@@ -1062,7 +1063,7 @@ class ObjectStoreGraphWalker(object):
         while self.heads:
             for a in ancestors:
                 if a in self.heads:
-                    self.heads.remove(a)
+                    del self.heads[a]
 
             # collect all ancestors
             new_ancestors = set()
@@ -1081,10 +1082,10 @@ class ObjectStoreGraphWalker(object):
     def next(self):
         """Iterate over ancestors of heads in the target."""
         if self.heads:
-            ret = self.heads.pop()
+            ret, _ = self.heads.popitem(last=False)
             ps = self.get_parents(ret)
             self.parents[ret] = ps
-            self.heads.update([p for p in ps if not p in self.parents])
+            self.heads.update([(p, 1) for p in ps if not p in self.parents])
             return ret
         return None
 

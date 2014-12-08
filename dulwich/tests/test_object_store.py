@@ -454,23 +454,15 @@ class ObjectStoreGraphWalkerTests(TestCase):
                 "e": [],
                 })
         walk = []
-        acked = False
         walk.append(next(gw))
         walk.append(next(gw))
-        # A branch (a, c) or (b, d) may be done after 2 steps or 3 depending on
-        # the order walked: 3-step walks include (a, b, c) and (b, a, d), etc.
-        if walk == ["a" * 40, "c" * 40] or walk == ["b" * 40, "d" * 40]:
-          gw.ack(walk[0])
-          acked = True
+        self.assertEqual(["a" * 40, "b" * 40], walk)
 
         walk.append(next(gw))
-        if not acked and walk[2] == "c" * 40:
-          gw.ack("a" * 40)
-        elif not acked and walk[2] == "d" * 40:
-          gw.ack("b" * 40)
+        self.assertEqual(["a" * 40, "b" * 40, "c" * 40], walk)
+
+        gw.ack("a" * 40)
         walk.append(next(gw))
         self.assertIs(None, next(gw))
 
-        self.assertEqual(["a" * 40, "b" * 40, "c" * 40, "d" * 40], sorted(walk))
-        self.assertLess(walk.index("a" * 40), walk.index("c" * 40))
-        self.assertLess(walk.index("b" * 40), walk.index("d" * 40))
+        self.assertEqual(["a" * 40, "b" * 40, "c" * 40, "d" * 40], walk)
